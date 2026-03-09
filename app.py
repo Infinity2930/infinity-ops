@@ -389,18 +389,18 @@ def markdown_to_html(md: str) -> str:
     """Very lightweight markdown → HTML for Shopify blog body."""
     html = md
     # H1–H3
-    html = re.sub(r"^### (.+)$", r"<h3>\\1</h3>", html, flags=re.MULTILINE)
-    html = re.sub(r"^## (.+)$",  r"<h2>\\1</h2>", html, flags=re.MULTILINE)
-    html = re.sub(r"^# (.+)$",   r"<h1>\\1</h1>", html, flags=re.MULTILINE)
+    html = re.sub(r"^### (.+)$", r"<h3>\1</h3>", html, flags=re.MULTILINE)
+    html = re.sub(r"^## (.+)$",  r"<h2>\1</h2>", html, flags=re.MULTILINE)
+    html = re.sub(r"^# (.+)$",   r"<h1>\1</h1>", html, flags=re.MULTILINE)
     # Bold
-    html = re.sub(r"\\*\\*(.+?)\\*\\*", r"<strong>\\1</strong>", html)
+    html = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", html)
     # Links
-    html = re.sub(r"\\[([^\\]]+)\\]\\(([^)]+)\\)", r'<a href="\\2">\\1</a>', html)
+    html = re.sub(r"\[([^\]]+)\]\(([^)]+)\)", r'<a href="\2">\1</a>', html)
     # Blockquotes (CTAs)
-    html = re.sub(r"^> (.+)$", r"<p><em>\\1</em></p>", html, flags=re.MULTILINE)
+    html = re.sub(r"^> (.+)$", r"<p><em>\1</em></p>", html, flags=re.MULTILINE)
     # Bullets
-    html = re.sub(r"^- (.+)$", r"<li>\\1</li>", html, flags=re.MULTILINE)
-    html = re.sub(r"(<li>.*</li>)", r"<ul>\\1</ul>", html, flags=re.DOTALL)
+    html = re.sub(r"^- (.+)$", r"<li>\1</li>", html, flags=re.MULTILINE)
+    html = re.sub(r"(<li>.*</li>)", r"<ul>\1</ul>", html, flags=re.DOTALL)
     # Paragraphs
     lines = html.split("\n")
     out   = []
@@ -412,9 +412,9 @@ def markdown_to_html(md: str) -> str:
     return "\n".join(out)
 
 
-# ================================================================================
+# ══════════════════════════════════════════════════════════════════════════════
 # PAGE: COLLECTIONS DASHBOARD
-# ================================================================================
+# ══════════════════════════════════════════════════════════════════════════════
 def page_dashboard():
     st.header("Collections Dashboard")
     st.caption("75 recommended collections from your product tags. "
@@ -427,7 +427,7 @@ def page_dashboard():
 
     existing = fetch_existing_collections()
 
-    # Filters
+    # Filters — stack to 2 columns for mobile friendliness
     c1, c2 = st.columns(2)
     tier_filter   = c1.selectbox("Tier",   ["All","Tier 1","Tier 2","Tier 3","Tier 4"])
     status_filter = c2.selectbox("Status", ["All","To Build","Already Live"])
@@ -503,9 +503,9 @@ def page_dashboard():
             st.divider()
 
 
-# ================================================================================
+# ══════════════════════════════════════════════════════════════════════════════
 # PAGE: COLLECTION CREATOR
-# ================================================================================
+# ══════════════════════════════════════════════════════════════════════════════
 def page_creator():
     st.header("Collection Creator")
     st.caption("Type a description or use the form to create a collection in Shopify.")
@@ -584,9 +584,10 @@ def page_creator():
                         st.write(r)
                     fetch_existing_collections.clear()
 
-# ================================================================================
+
+# ══════════════════════════════════════════════════════════════════════════════
 # PAGE: BLOG WRITER
-# ================================================================================
+# ══════════════════════════════════════════════════════════════════════════════
 def page_blog():
     st.header("Blog Writer")
     st.caption("Write SEO + GEO optimised blog posts with live collection and product links "
@@ -596,6 +597,7 @@ def page_blog():
         st.warning("ANTHROPIC_API_KEY not set. Add it to your .env file or Streamlit secrets.")
         return
 
+    # ── Brief ────────────────────────────────────────────────────────────────
     with st.expander("1. Brief", expanded=True):
         topic    = st.text_input("Blog topic or title idea",
                                   placeholder="e.g. Best Harry Potter gifts for adults")
@@ -614,6 +616,7 @@ def page_blog():
                                        options=[600, 800, 1000, 1200, 1500, 1800, 2000, 2500],
                                        value=1000)
 
+    # ── Collections to interlink ─────────────────────────────────────────────
     with st.expander("2. Collections to Interlink", expanded=True):
         st.caption("Select live Shopify collections to embed as internal links in the post. "
                    "The AI picks the most relevant ones automatically — you can override.")
@@ -624,6 +627,7 @@ def page_blog():
             live_colls = [(n, n.lower().replace(" ", "-")) for _, n, _, _, _, _ in COLLECTIONS_PLAN]
 
         coll_names   = [t for t, _ in live_colls]
+        # Pre-select collections that match the topic keywords
         topic_words  = (topic + " " + keyword).lower().split() if topic else []
         preselected  = [i for i, (t, _) in enumerate(live_colls)
                         if any(w in t.lower() for w in topic_words)][:6]
@@ -636,6 +640,7 @@ def page_blog():
         )
         selected_colls = [live_colls[i] for i in selected_idxs]
 
+    # ── Products to feature ──────────────────────────────────────────────────
     with st.expander("3. Products to Feature", expanded=False):
         st.caption("Search for specific products to call out in the post with real links and prices.")
         prod_query = st.text_input("Search products",
@@ -661,6 +666,7 @@ def page_blog():
             else:
                 st.info("No products found for that search.")
 
+    # ── Generate ─────────────────────────────────────────────────────────────
     st.divider()
     if st.button("✍️ Generate Blog Post", type="primary",
                  use_container_width=True, disabled=not topic):
@@ -677,10 +683,12 @@ def page_blog():
             st.session_state["blog_html"]         = markdown_to_html(raw_text)
             st.session_state["blog_colls_used"]   = selected_colls
 
+    # ── Output ───────────────────────────────────────────────────────────────
     if "blog_output" in st.session_state:
         raw  = st.session_state["blog_output"]
         html = st.session_state["blog_html"]
 
+        # Extract metadata section
         meta_section = ""
         if "**Primary keyword:**" in raw or "Primary keyword:" in raw:
             parts = re.split(r"---\nSEO METADATA|SEO METADATA|---$", raw, flags=re.MULTILINE)
@@ -709,6 +717,7 @@ def page_blog():
             else:
                 st.info("Metadata will appear here — it's usually at the bottom of the Preview tab.")
 
+        # ── Publish to Shopify ────────────────────────────────────────────
         st.divider()
         st.subheader("Publish to Shopify Blog")
         blogs = fetch_shopify_blogs()
@@ -740,9 +749,9 @@ def page_blog():
                     st.error(f"Publish failed: {res.get('errors', res)}")
 
 
-# ================================================================================
+# ══════════════════════════════════════════════════════════════════════════════
 # PAGE: AUTO-TAGGER
-# ================================================================================
+# ══════════════════════════════════════════════════════════════════════════════
 def page_tagger():
     st.header("Product Auto-Tagger")
     st.caption("Run the AI tagger on your catalogue. Last run: 7,952 / 7,973 products (99.7%).")
@@ -803,9 +812,9 @@ def page_tagger():
         st.info("No outputs folder found — run the tagger first.")
 
 
-# ================================================================================
+# ══════════════════════════════════════════════════════════════════════════════
 # PAGE: TAG BROWSER
-# ================================================================================
+# ══════════════════════════════════════════════════════════════════════════════
 def page_tags():
     st.header("Tag Browser")
     st.caption("Explore all 2,391 tags from your last tagger run.")
@@ -846,22 +855,27 @@ def page_tags():
                     st.error(str(res.get("errors", res)))
 
 
-# ================================================================================
+# ══════════════════════════════════════════════════════════════════════════════
 # MAIN
-# ================================================================================
+# ══════════════════════════════════════════════════════════════════════════════
 def main():
     st.set_page_config(
         page_title="Infinity Collectables – Ops",
         page_icon="♾️",
         layout="wide",
+        # Collapsed by default so mobile gets full screen immediately
         initial_sidebar_state="collapsed",
     )
 
+    # Inject mobile-friendly CSS
     st.markdown("""
     <style>
+    /* Tighter padding on mobile */
     .block-container { padding: 1rem 1rem 2rem 1rem !important; }
+    /* Bigger tap targets */
     .stButton button { min-height: 44px; font-size: 15px; }
     .stSelectbox > div, .stTextInput > div > input { font-size: 16px; }
+    /* Keep sidebar nav readable */
     [data-testid="stSidebarNav"] { font-size: 15px; }
     </style>
     """, unsafe_allow_html=True)
