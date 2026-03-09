@@ -19,7 +19,7 @@ import pandas as pd
 load_dotenv()
 
 # ── Config ────────────────────────────────────────────────────────────────────
-SHOPIFY_STORE   = os.getenv("SHOPIFY_STORE_URL", "").strip().strip("/")
+SHOPIFY_STORE   = os.getenv("SHOPIFY_STORE_URL", "").strip().strip("/"
 ACCESS_TOKEN    = os.getenv("SHOPIFY_ACCESS_TOKEN", "")
 ANTHROPIC_KEY   = os.getenv("ANTHROPIC_API_KEY", "")
 API_VERSION     = "2024-01"
@@ -816,6 +816,7 @@ def page_tags():
 
     df = pd.read_csv(TAG_CSV)
     df.columns = ["Tag", "Products"]
+        df["Products"] = pd.to_numeric(df["Products"], errors="coerce").fillna(0).astype(int)
 
     search    = st.text_input("Search", placeholder="e.g. Liverpool, Harry Potter, T-Shirt")
     min_count = st.slider("Min product count", 1, 200, 1)
