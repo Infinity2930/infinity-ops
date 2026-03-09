@@ -19,7 +19,7 @@ import pandas as pd
 load_dotenv()
 
 # ── Config ────────────────────────────────────────────────────────────────────
-SHOPIFY_STORE   = os.getenv("SHOPIFY_STORE_URL", "").strip().strip("/"
+SHOPIFY_STORE   = os.getenv("SHOPIFY_STORE_URL", "").strip().strip("/")
 ACCESS_TOKEN    = os.getenv("SHOPIFY_ACCESS_TOKEN", "")
 ANTHROPIC_KEY   = os.getenv("ANTHROPIC_API_KEY", "")
 API_VERSION     = "2024-01"
