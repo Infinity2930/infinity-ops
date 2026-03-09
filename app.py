@@ -11,7 +11,7 @@ import requests
 import os
 import subprocess
 import time
-import hashlib
+import hashli
 import re
 from dotenv import load_dotenv
 import pandas as pd
@@ -816,7 +816,7 @@ def page_tags():
 
     df = pd.read_csv(TAG_CSV)
     df.columns = ["Tag", "Products"]
-        df["Products"] = pd.to_numeric(df["Products"], errors="coerce").fillna(0).astype(int)
+    df["Products"] = pd.to_numeric(df["Products"], errors="coerce").fillna(0).astype(int)
 
     search    = st.text_input("Search", placeholder="e.g. Liverpool, Harry Potter, T-Shirt")
     min_count = st.slider("Min product count", 1, 200, 1)
