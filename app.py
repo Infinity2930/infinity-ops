@@ -9,6 +9,8 @@ Secrets:   SHOPIFY_STORE_URL, SHOPIFY_ACCESS_TOKEN, ANTHROPIC_API_KEY, APP_PASSW
 import streamlit as st
 import requests
 import os
+import sys
+import json
 import subprocess
 import time
 import hashlib
@@ -95,20 +97,24 @@ COLLECTIONS_PLAN = [
     ("Tier 3","Sanrio","Franchise","Sanrio",87,"Hello Kitty; TikTok-driven demand"),
     ("Tier 3","FC Barcelona","Football Club","FC Barcelona",82,"International Spanish fans"),
     ("Tier 3","Batman","Franchise","Batman",79,"Evergreen DC icon"),
-    ("Tier 3","Bushiroad","Brand","Bushiroad",79,"TCG / anime cards"),
-    ("Tier 3","Towels","Product Type","Towel",79,"Football gift staple"),
-    ("Tier 3","Stranger Things","Franchise","Stranger Things",78,"Netflix nostalgia"),
-    ("Tier 3","Lilo & Stitch","Franchise","Lilo & Stitch",76,"Trending Disney character"),
-    ("Tier 3","Super Mario","Franchise","Super Mario",76,"Gaming collectors"),
-    ("Tier 3","Leicester City","Football Club","Leicester FC",76,"Championship returnees"),
-    ("Tier 4","Mezco Toyz","Brand","Mezco Toyz",71,"Premium collector figures"),
-    ("Tier 4","Beanies","Product Type","Beanie",75,"Winter gifting"),
-    ("Tier 4","Duvet Sets","Product Type","Duvet Set",75,"Bedroom décor gifting"),
-    ("Tier 4","Drinks Bottles","Product Type","Drinks Bottle",74,"Functional gift"),
-    ("Tier 4","Limited Edition","Special","Limited Edition",74,"Scarcity marketing"),
-    ("Tier 4","Puzzles","Product Type","Puzzle",70,"Family gifting"),
-    ("Tier 4","Necklaces","Product Type","Necklace",70,"Jewellery gifting"),
-    ("Tier 4","Wednesday","Franchise","Wednesday",59,"Netflix — Addams Family fandom"),
+    ("Tier 3","Southampton","Football Club","Southampton",75,"Promoted club"),
+    ("Tier 3","Leicester City","Football Club","Leicester",72,"Promoted club"),
+    ("Tier 4","Bornemouth","Football Club","Bournemouth",69,"PL mid-table"),
+    ("Tier 4","Brentford","Football Club","Brentford",68,"Surprise PL side"),
+    ("Tier 4","Nottingham Forest","Football Club","Nottingham Forest",66,"ERL round of 16"),
+    ("Tier 4","Wolverhampton Wanderers","Football Club","Wolves",65,"PL stayers"),
+    ("Tier 4","Fulham","Football Club","Fulham",64,"London fan base"),
+    ("Tier 4","Ipswich Town","Football Club","Ipswich",64,"Promoted club"),
+    ("Tier 4","Brighton & Hove Albion","Football Club","Brighton",60,"UCL fan base"),
+    ("Tier 4","Crystal Palace","Football Club","Crystal Palace",50,"South London fan base"),
+    ("Tier 4","Age 13+","Age","Age 13+",58,"Teen collector segment"),
+    ("Tier 4","Notebooks","Product Type","Notebook",56,"Stationery gifts"),
+    ("Tier 4","Gifts for Him","Gender","Male",359,"Gift guide SEO"),
+    ("Tier 4","Gifts for Her","Gender","Female",324,"Gift guide SEO"),
+]
+
+
+ix — Addams Family fandom"),
     ("Tier 4","Stickers","Product Type","Sticker",66,"Low-AOV add-on"),
     ("Tier 4","Backpacks","Product Type","Backpack",66,"School/fan crossover"),
     ("Tier 4","Scarves","Product Type","Scarf",62,"Football match-day staple"),
@@ -218,15 +224,30 @@ def fetch_shopify_blogs():
     return [(b["id"], b["title"]) for b in r.json().get("blogs", [])]
 
 
-def create_smart_collection(title: str, tag: str, sort_by="best-selling") -> dict:
-    payload = {"smart_collection": {
+def create_smart_collection(title: str, tag: str, sort_by="best-selling",
+                             body_html="", seo_title="", seo_description="") -> dict:
+    sc = {
         "title": title,
         "rules": [{"column": "tag", "relation": "equals", "condition": tag}],
         "disjunctive": False,
         "sort_order": sort_by,
-    }}
+    }
+    if body_html:
+        sc["body_html"] = body_html
+    if seo_title or seo_description:
+        sc["metafields"] = []
+        if seo_title:
+            sc["metafields"].append({
+                "key": "title_tag", "value": seo_title,
+                "type": "single_line_text_field", "namespace": "global",
+            })
+        if seo_description:
+            sc["metafields"].append({
+                "key": "description_tag", "value": seo_description,
+                "type": "single_line_text_field", "namespace": "global",
+            })
     return requests.post(f"{BASE_URL}/smart_collections.json",
-                         headers=HEADERS, json=payload).json()
+                         headers=HEADERS, json={"smart_collection": sc}).json()
 
 
 def publish_article_to_shopify(blog_id: int, title: str, body_html: str,
@@ -385,6 +406,60 @@ def call_anthropic(prompt: str) -> str:
     return r.json()["content"][0]["text"]
 
 
+def generate_collection_content(name: str, tag: str,
+                                  ctype: str = "", note: str = "") -> dict:
+    """Use Claude Haiku to generate body_html, seo_title, and seo_description
+    for a Shopify collection. Returns empty strings if no API key."""
+    empty = {"body_html": "", "seo_title": "", "seo_description": ""}
+    if not ANTHROPIC_KEY:
+        return empty
+    prompt = (
+        "You are writing content for Infinity Collectables (infinitycollectables.co.uk), "
+        "a UK online retailer specialising in collectables, figures, toys, and memorabilia.\n\n"
+        f"Write content for a Shopify smart collection:\n"
+        f"- Name: {name}\n"
+        f"- Tag filter: {tag}\n"
+        f"- Type: {ctype or 'General'}\n"
+        f"- Notes: {note or 'None'}\n\n"
+        "Return ONLY a JSON object, no markdown fences, no extra text:\n"
+        "{\n"
+        '  "body_html": "<p>[2-3 natural sentences describing this collection. '
+        "Mention specific brands, product types, or themes. "
+        "End with a soft call-to-action. British English, no em dashes.]</p>\",\n"
+        '  "seo_title": "[Collection Name] | Infinity Collectables",\n'
+        '  "seo_description": "[150-155 char meta description. '
+        "Lead with primary keyword. Mention UK delivery. Ends with CTA. British English.]\"\n"
+        "}"
+    )
+    r = requests.post(
+        "https://api.anthropic.com/v1/messages",
+        headers={
+            "x-api-key": ANTHROPIC_KEY,
+            "anthropic-version": "2023-06-01",
+            "content-type": "application/json",
+        },
+        json={
+            "model": "claude-haiku-4-5-20251001",
+            "max_tokens": 512,
+            "messages": [{"role": "user", "content": prompt}],
+        },
+        timeout=30,
+    )
+    if r.status_code != 200:
+        return empty
+    text = r.json()["content"][0]["text"].strip()
+    # Strip markdown fences if present
+    if text.startswith("```"):
+        text = text.split("```")[1]
+        if text.startswith("json"):
+            text = text[4:]
+        text = text.strip()
+    try:
+        return json.loads(text)
+    except Exception:
+        return empty
+
+
 def markdown_to_html(md: str) -> str:
     """Very lightweight markdown → HTML for Shopify blog body."""
     html = md
@@ -463,7 +538,11 @@ def page_dashboard():
             prog = st.progress(0)
             ok = 0
             for i, coll in enumerate(to_create):
-                res = create_smart_collection(coll[1], coll[3])
+                seo = generate_collection_content(coll[1], coll[3], coll[2], coll[5])
+                res = create_smart_collection(coll[1], coll[3],
+                                               body_html=seo["body_html"],
+                                               seo_title=seo["seo_title"],
+                                               seo_description=seo["seo_description"])
                 if "smart_collection" in res:
                     ok += 1
                 prog.progress((i + 1) / len(to_create))
@@ -493,7 +572,11 @@ def page_dashboard():
                 if st.button(f"Create → {name}", key=f"btn_{name}",
                              use_container_width=True):
                     with st.spinner(f"Creating '{name}'..."):
-                        res = create_smart_collection(name, tag)
+                        seo = generate_collection_content(name, tag, ctype, note)
+                        res = create_smart_collection(name, tag,
+                                                       body_html=seo["body_html"],
+                                                       seo_title=seo["seo_title"],
+                                                       seo_description=seo["seo_description"])
                     if "smart_collection" in res:
                         st.toast(f"'{name}' created!", icon="🎉")
                         fetch_existing_collections.clear()
@@ -530,7 +613,11 @@ def page_creator():
                 title, tag = parse_natural_language(user_input)
                 if title and tag:
                     with st.spinner(f"Creating '{title}'..."):
-                        res = create_smart_collection(title, tag)
+                        seo = generate_collection_content(title, tag)
+                        res = create_smart_collection(title, tag,
+                                                       body_html=seo["body_html"],
+                                                       seo_title=seo["seo_title"],
+                                                       seo_description=seo["seo_description"])
                     if "smart_collection" in res:
                         sc = res["smart_collection"]
                         st.success(f"✅ '{sc['title']}' created!")
@@ -554,10 +641,14 @@ def page_creator():
                 st.warning("Fill in both fields.")
             else:
                 with st.spinner():
-                    res = create_smart_collection(title, tag, sort_order)
+                    seo = generate_collection_content(title, tag)
+                    res = create_smart_collection(title, tag, sort_order,
+                                                   body_html=seo["body_html"],
+                                                   seo_title=seo["seo_title"],
+                                                   seo_description=seo["seo_description"])
                 if "smart_collection" in res:
                     sc = res["smart_collection"]
-                    st.success(f"✅ '{sc['title']}' created — handle: `{sc['handle']}`")
+                    st.success(f"✅ '{sc['title']}' created — handle: `(sc['handle']}`")
                     fetch_existing_collections.clear()
                 else:
                     st.error(str(res.get("errors", res)))
@@ -575,7 +666,11 @@ def page_creator():
                     prog = st.progress(0)
                     results = []
                     for i, row in df.iterrows():
-                        res = create_smart_collection(str(row["name"]), str(row["tag"]))
+                        seo = generate_collection_content(str(row["name"]), str(row["tag"]))
+                        res = create_smart_collection(str(row["name"]), str(row["tag"]),
+                                                       body_html=seo["body_html"],
+                                                       seo_title=seo["seo_title"],
+                                                       seo_description=seo["seo_description"])
                         results.append(
                             f"{'✅' if 'smart_collection' in res else '❌'} {row['name']}")
                         prog.progress((i + 1) / len(df))
@@ -597,7 +692,7 @@ def page_blog():
         st.warning("ANTHROPIC_API_KEY not set. Add it to your .env file or Streamlit secrets.")
         return
 
-    # ── Brief ────────────────────────────────────────────────────────────────
+    # ── Brief ───────────────────────────────────────────────────────────────
     with st.expander("1. Brief", expanded=True):
         topic    = st.text_input("Blog topic or title idea",
                                   placeholder="e.g. Best Harry Potter gifts for adults")
@@ -769,7 +864,7 @@ def page_tagger():
 
     if st.button("▶ Run Tagger", type="primary", use_container_width=True):
         st.warning("Running... do not close this tab. A full run takes ~2–3 hours.")
-        cmd = ["python3", TAGGER_SCRIPT, "--batch-size", str(batch)]
+        cmd = [sys.executable, TAGGER_SCRIPT, "--batch-size", str(batch)]
         if live_flag:
             cmd.append("--live")
         log_area = st.empty()
@@ -812,7 +907,7 @@ def page_tagger():
         st.info("No outputs folder found — run the tagger first.")
 
 
-# ══════════════════════════════════════════════════════════════════════════════
+# ═════════════════════════════════════════════════════════════════════
 # PAGE: TAG BROWSER
 # ══════════════════════════════════════════════════════════════════════════════
 def page_tags():
@@ -847,7 +942,11 @@ def page_tags():
                 st.warning("Shopify credentials not found.")
             else:
                 with st.spinner():
-                    res = create_smart_collection(coll_name, sel_tag)
+                    seo = generate_collection_content(coll_name, sel_tag)
+                    res = create_smart_collection(coll_name, sel_tag,
+                                                   body_html=seo["body_html"],
+                                                   seo_title=seo["seo_title"],
+                                                   seo_description=seo["seo_description"])
                 if "smart_collection" in res:
                     st.success(f"✅ '{coll_name}' created!")
                     fetch_existing_collections.clear()
@@ -916,4 +1015,6 @@ def main():
 
 
 if __name__ == "__main__":
+    main()
+e__ == "__main__":
     main()
