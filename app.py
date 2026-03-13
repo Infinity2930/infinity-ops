@@ -644,7 +644,7 @@ def page_creator():
                                                    seo_description=seo["seo_description"])
                 if "smart_collection" in res:
                     sc = res["smart_collection"]
-                    st.success(f"✅ '{sc['title']}' created - handle: `(sc['handle']}`")
+                    st.success(f"✅ '{sc['title']}' created - handle: `{sc['handle']}`")
                     fetch_existing_collections.clear()
                 else:
                     st.error(str(res.get("errors", res)))
