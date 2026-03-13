@@ -114,7 +114,7 @@ COLLECTIONS_PLAN = [
 ]
 
 
-ix — Addams Family fandom"),
+ix - Addams Family fandom"),
     ("Tier 4","Stickers","Product Type","Sticker",66,"Low-AOV add-on"),
     ("Tier 4","Backpacks","Product Type","Backpack",66,"School/fan crossover"),
     ("Tier 4","Scarves","Product Type","Scarf",62,"Football match-day staple"),
@@ -141,7 +141,7 @@ def _check_password() -> bool:
         st.markdown(
             "<div style='text-align:center;margin-top:80px'>"
             "<h2 style='color:#0D1B2A'>♾️ Infinity Collectables</h2>"
-            "<p style='color:#888'>Ops Dashboard — Team Access</p></div>",
+            "<p style='color:#888'>Ops Dashboard - Team Access</p></div>",
             unsafe_allow_html=True)
         with st.form("login_form"):
             pw = st.text_input("Password", type="password",
@@ -181,7 +181,7 @@ def fetch_existing_collections():
 
 @st.cache_data(ttl=300)
 def fetch_all_live_collections():
-    """Return list of (title, handle) for all live collections — for blog interlinking."""
+    """Return list of (title, handle) for all live collections - for blog interlinking."""
     results = []
     if not ACCESS_TOKEN or not SHOPIFY_STORE:
         return results
@@ -293,7 +293,7 @@ def build_blog_prompt(topic: str, post_type: str, keyword: str, word_count: int,
         for p in products[:8]:
             price = ""
             if p.get("variants"):
-                price = f" — £{p['variants'][0].get('price','')}"
+                price = f" - £{p['variants'][0].get('price','')}"
             lines.append(f"- [{p['title']}]({store_url}/products/{p['handle']}){price}")
         prod_block = "\n".join(lines)
 
@@ -306,7 +306,7 @@ BRIEF
 - Primary keyword: {keyword}
 - Target word count: ~{word_count} words
 - Audience: UK fans, collectors, and gift buyers aged 16–45
-- Tone: Knowledgeable, enthusiastic, trustworthy — collector-to-collector energy
+- Tone: Knowledgeable, enthusiastic, trustworthy - collector-to-collector energy
 
 ---
 LIVE COLLECTIONS TO LINK (use the most relevant ones as natural internal links):
@@ -317,9 +317,9 @@ FEATURED PRODUCTS TO MENTION (weave in naturally with actual links):
 {prod_block if prod_block else "Reference products naturally without specific links"}
 
 ---
-REQUIRED STRUCTURE — follow this exactly:
+REQUIRED STRUCTURE - follow this exactly:
 
-## [SEO Title — H1, 55–65 chars, include primary keyword]
+## [SEO Title - H1, 55–65 chars, include primary keyword]
 
 **Quick Answer / TL;DR**
 - [3–6 bullet points summarising the post]
@@ -376,8 +376,8 @@ QUALITY RULES:
 - FAQ with minimum 4 real questions
 - At least 3 internal links to live collection pages using the URLs provided above
 - Two CTA blocks (one near top, one at bottom)
-- No keyword stuffing — must read naturally aloud
-- Do not use em dashes — use commas or rewrite the sentence instead
+- No keyword stuffing - must read naturally aloud
+- Do not use em dashes - use commas or rewrite the sentence instead
 - Write in British English (licence not license, colour not color etc.)
 
 Now write the complete blog post:"""
@@ -502,7 +502,7 @@ def page_dashboard():
 
     existing = fetch_existing_collections()
 
-    # Filters — stack to 2 columns for mobile friendliness
+    # Filters - stack to 2 columns for mobile friendliness
     c1, c2 = st.columns(2)
     tier_filter   = c1.selectbox("Tier",   ["All","Tier 1","Tier 2","Tier 3","Tier 4"])
     status_filter = c2.selectbox("Status", ["All","To Build","Already Live"])
@@ -547,7 +547,7 @@ def page_dashboard():
                     ok += 1
                 prog.progress((i + 1) / len(to_create))
                 time.sleep(0.3)
-            st.success(f"Done — {ok}/{len(to_create)} collections created.")
+            st.success(f"Done - {ok}/{len(to_create)} collections created.")
             fetch_existing_collections.clear()
             st.rerun()
 
@@ -648,7 +648,7 @@ def page_creator():
                                                    seo_description=seo["seo_description"])
                 if "smart_collection" in res:
                     sc = res["smart_collection"]
-                    st.success(f"✅ '{sc['title']}' created — handle: `(sc['handle']}`")
+                    st.success(f"✅ '{sc['title']}' created - handle: `(sc['handle']}`")
                     fetch_existing_collections.clear()
                 else:
                     st.error(str(res.get("errors", res)))
@@ -714,7 +714,7 @@ def page_blog():
     # ── Collections to interlink ─────────────────────────────────────────────
     with st.expander("2. Collections to Interlink", expanded=True):
         st.caption("Select live Shopify collections to embed as internal links in the post. "
-                   "The AI picks the most relevant ones automatically — you can override.")
+                   "The AI picks the most relevant ones automatically - you can override.")
 
         live_colls = fetch_all_live_collections()
         if not live_colls:
@@ -728,7 +728,7 @@ def page_blog():
                         if any(w in t.lower() for w in topic_words)][:6]
 
         selected_idxs = st.multiselect(
-            "Collections (pre-selected by topic relevance — adjust as needed)",
+            "Collections (pre-selected by topic relevance - adjust as needed)",
             options=list(range(len(live_colls))),
             default=preselected,
             format_func=lambda i: coll_names[i],
@@ -754,7 +754,7 @@ def page_blog():
                 for p in products:
                     price = p["variants"][0]["price"] if p.get("variants") else ""
                     st.markdown(
-                        f"- **{p['title']}** — £{price} — "
+                        f"- **{p['title']}** - £{price} - "
                         f"[{STORE_DOMAIN}/products/{p['handle']}]"
                         f"({STORE_DOMAIN}/products/{p['handle']})"
                     )
@@ -810,7 +810,7 @@ def page_blog():
             if meta_section:
                 st.markdown(meta_section)
             else:
-                st.info("Metadata will appear here — it's usually at the bottom of the Preview tab.")
+                st.info("Metadata will appear here - it's usually at the bottom of the Preview tab.")
 
         # ── Publish to Shopify ────────────────────────────────────────────
         st.divider()
@@ -904,32 +904,131 @@ def page_tagger():
         else:
             st.info("No reports yet.")
     else:
-        st.info("No outputs folder found — run the tagger first.")
+        st.info("No outputs folder found - run the tagger first.")
 
 
 # ═════════════════════════════════════════════════════════════════════
 # PAGE: TAG BROWSER
 # ══════════════════════════════════════════════════════════════════════════════
+def _load_tag_csvs():
+    """Return (current_df, previous_df | None) from the two most recent tag CSVs."""
+    out = os.path.join(os.path.dirname(__file__), "outputs")
+    if not os.path.isdir(out):
+        return None, None
+    hits = sorted(
+        [f for f in os.listdir(out) if f.startswith("tag_summary") and f.endswith(".csv")],
+        reverse=True,
+    )
+    def _read(fname):
+        df = pd.read_csv(os.path.join(out, fname))
+        df.columns = ["Tag", "Products"]
+        df["Products"] = pd.to_numeric(df["Products"], errors="coerce").fillna(0).astype(int)
+        return df
+    current  = _read(hits[0]) if len(hits) >= 1 else None
+    previous = _read(hits[1]) if len(hits) >= 2 else None
+    return current, previous
+
+
+def _new_tags_section(current_df, previous_df, existing_colls, min_products=3):
+    """Render the 'New Since Last Run' suggested collections panel."""
+    if previous_df is None:
+        return  # Only one run so far - nothing to compare against
+
+    prev_tags = set(previous_df["Tag"].str.lower())
+    new = current_df[
+        (~current_df["Tag"].str.lower().isin(prev_tags)) &
+        (current_df["Products"] >= min_products)
+    ].sort_values("Products", ascending=False)
+
+    if new.empty:
+        return
+
+    st.subheader(f"🆕 New Since Last Run  ·  {len(new)} tags")
+    st.caption(
+        f"These tags didn't exist in the previous tagger run and have ≥{min_products} active products. "
+        "Create a collection in one click - SEO content is auto-generated."
+    )
+
+    for _, row in new.iterrows():
+        tag  = row["Tag"]
+        cnt  = int(row["Products"])
+        live = tag.lower() in existing_colls
+        c1, c2, c3 = st.columns([4, 1, 2])
+        c1.markdown(f"**{tag}**")
+        c2.markdown(f"`{cnt:,}`")
+        if live:
+            c3.success("Live ✅")
+        else:
+            if c3.button("Create Collection", key=f"new_{tag}", use_container_width=True):
+                if not ACCESS_TOKEN or not SHOPIFY_STORE:
+                    st.warning("Shopify credentials not found.")
+                else:
+                    with st.spinner(f"Creating '{tag}'..."):
+                        seo = generate_collection_content(tag, tag)
+                        res = create_smart_collection(tag, tag,
+                                                       body_html=seo["body_html"],
+                                                       seo_title=seo["seo_title"],
+                                                       seo_description=seo["seo_description"])
+                    if "smart_collection" in res:
+                        st.toast(f"'{tag}' created!", icon="🎉")
+                        fetch_existing_collections.clear()
+                        st.rerun()
+                    else:
+                        st.error(str(res.get("errors", res)))
+
+    # Bulk create all unbuilt new tags
+    unbuild = new[~new["Tag"].str.lower().isin(existing_colls)]
+    if not unbuild.empty and ACCESS_TOKEN and SHOPIFY_STORE:
+        st.divider()
+        if st.button(f"🚀 Create All {len(unbuild)} New Collections",
+                     type="primary", use_container_width=True):
+            prog = st.progress(0)
+            ok = 0
+            for i, (_, row) in enumerate(unbuild.iterrows()):
+                seo = generate_collection_content(row["Tag"], row["Tag"])
+                res = create_smart_collection(row["Tag"], row["Tag"],
+                                               body_html=seo["body_html"],
+                                               seo_title=seo["seo_title"],
+                                               seo_description=seo["seo_description"])
+                if "smart_collection" in res:
+                    ok += 1
+                prog.progress((i + 1) / len(unbuild))
+                time.sleep(0.3)
+            st.success(f"Done - {ok}/{len(unbuild)} collections created.")
+            fetch_existing_collections.clear()
+            st.rerun()
+
+    st.divider()
+
+
 def page_tags():
     st.header("Tag Browser")
-    st.caption("Explore all 2,391 tags from your last tagger run.")
 
-    if not TAG_CSV or not os.path.isfile(TAG_CSV):
+    current_df, previous_df = _load_tag_csvs()
+
+    if current_df is None:
         st.info("Tag summary CSV not found. Run the tagger first.")
         return
 
-    df = pd.read_csv(TAG_CSV)
-    df.columns = ["Tag", "Products"]
-    df["Products"] = pd.to_numeric(df["Products"], errors="coerce").fillna(0).astype(int)
+    total = len(current_df)
+    runs_label = "comparing last 2 runs" if previous_df is not None else "first run on record"
+    st.caption(f"Explore all {total:,} tags from your last tagger run ({runs_label}).")
 
+    existing_colls = fetch_existing_collections()
+
+    # ── New tags panel ────────────────────────────────────────────────────────
+    _new_tags_section(current_df, previous_df, existing_colls)
+
+    # ── Full tag browser ──────────────────────────────────────────────────────
+    st.subheader("All Tags")
     search    = st.text_input("Search", placeholder="e.g. Liverpool, Harry Potter, T-Shirt")
     min_count = st.slider("Min product count", 1, 200, 1)
 
-    filtered = df[df["Products"] >= min_count]
+    filtered = current_df[current_df["Products"] >= min_count]
     if search:
         filtered = filtered[filtered["Tag"].str.contains(search, case=False, na=False)]
 
-    st.metric("Tags shown", len(filtered), f"of {len(df)} total")
+    st.metric("Tags shown", len(filtered), f"of {total:,} total")
     st.dataframe(filtered.head(200), use_container_width=True, hide_index=True)
 
     st.divider()
@@ -1015,6 +1114,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
-e__ == "__main__":
     main()
