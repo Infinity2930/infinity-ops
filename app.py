@@ -856,13 +856,13 @@ def page_tagger():
                                "LIVE (tags applied to Shopify)"],
                      help="Always dry-run first to check the output.")
     batch = st.slider("Batch size", 1, 50, 10)
-    live_flag = "--live" if "LIVE" in mode else ""
+    is_dry_run = "DRY RUN" in mode
 
     if st.button("▶ Run Tagger", type="primary", use_container_width=True):
         st.warning("Running... do not close this tab. A full run takes ~2–3 hours.")
         cmd = [sys.executable, TAGGER_SCRIPT, "--batch-size", str(batch)]
-        if live_flag:
-            cmd.append("--live")
+        if is_dry_run:
+            cmd.append("--dry-run")
         log_area = st.empty()
         logs = []
         try:
